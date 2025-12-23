@@ -48,7 +48,7 @@
             width: 95vw;
             max-width: 800px;
             height: 85vh;
-            overflow-y: scroll;
+            overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
                         0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -165,12 +165,16 @@
 
         .chart-canvas {
             width: 100% !important;
-            height: 280px !important;
+            height: calc((85vh - 240px) / 2) !important;
+            min-height: 140px;
+            max-height: 260px;
         }
 
         @media (max-width: 600px) {
             .chart-canvas {
-                height: 220px !important;
+                height: calc((100dvh - 240px) / 2) !important;
+                min-height: 100px;
+                max-height: 220px;
             }
         }
 
