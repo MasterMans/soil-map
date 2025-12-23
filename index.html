@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Почвенная карта - Карбоновая Ферма</title>
+    <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #1e2a3a, #16213e);
+            border-radius: 20px;
+            padding: 25px;
+            width: 70vw;
+            height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px rgba(255, 255, 255, 0.1);
+            animation: modalAppear 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .modal-title {
+            color: #e0e6ed;
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-title span {
+            color: #4ade80;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid rgba(239, 68, 68, 0.5);
+            color: #ef4444;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: rgba(239, 68, 68, 0.4);
+            transform: scale(1.05);
+        }
+
+        .charts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .chart-wrapper {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 15px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-title {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+        }
+
+        .chart-canvas {
+            width: 100% !important;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Стили для меток на карте */
+        .placemark-content {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #1a1a2e;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .placemark-content:hover {
+            transform: scale(1.15);
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, rgba(30, 42, 58, 0.95), rgba(22, 33, 62, 0.95));
+            padding: 20px 25px;
+            border-radius: 16px;
+            z-index: 100;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .info-panel h1 {
+            color: #e0e6ed;
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+
+        .info-panel p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .info-panel .highlight {
+            color: #4ade80;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="info-panel">
+        <h1>🌱 Карбоновая Ферма</h1>
+        <p>Мониторинг потоков <span class="highlight">CO₂</span> и <span class="highlight">CH₄</span></p>
+        <p style="margin-top: 8px; font-size: 0.8rem;">Нажмите на метку для просмотра данных</p>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Точка <span id="pointNumber">1</span></h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <h3 class="chart-title">Потоки CO₂ на Карбоновой Ферме за 2024</h3>
+                    <canvas id="co2Chart" class="chart-canvas"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h3 class="chart-title">Потоки CH₄ на Карбоновой Ферме за 2024</h3>
+                    <canvas id="ch4Chart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Данные точек
+        const points = [
+            { id: 1, lon: 45.740684, lat: 43.359289 },
+            { id: 2, lon: 45.740538, lat: 43.359064 },
+            { id: 3, lon: 45.739749, lat: 43.35846 },
+            { id: 4, lon: 45.740758, lat: 43.358969 },
+            { id: 5, lon: 45.741965, lat: 43.35914 },
+            { id: 6, lon: 45.740905, lat: 43.358684 },
+            { id: 7, lon: 45.739855, lat: 43.358214 },
+            { id: 8, lon: 45.740601, lat: 43.358346 },
+            { id: 9, lon: 45.741665, lat: 43.358802 },
+            { id: 10, lon: 45.742621, lat: 43.358866 },
+            { id: 11, lon: 45.741575, lat: 43.358403 },
+            { id: 12, lon: 45.740523, lat: 43.357933 },
+            { id: 13, lon: 45.740482, lat: 43.357613 },
+            { id: 14, lon: 45.741532, lat: 43.358078 },
+            { id: 15, lon: 45.742582, lat: 43.358547 },
+            { id: 16, lon: 45.743015, lat: 43.35845 },
+            { id: 17, lon: 45.742444, lat: 43.358269 },
+            { id: 18, lon: 45.74197, lat: 43.357967 },
+            { id: 19, lon: 45.740907, lat: 43.357509 },
+            { id: 20, lon: 45.741525, lat: 43.357504 },
+            { id: 21, lon: 45.742006, lat: 43.357784 },
+            { id: 22, lon: 45.742989, lat: 43.358164 },
+            { id: 23, lon: 45.742705, lat: 43.357845 }
+        ];
+
+        // Данные CO2 по месяцам для каждой точки
+        const co2Data = {
+            1: [1.64499937523, 0.99511324328, 5.68169238088, 3.52575955890, 7.00871773735, 2.96268119678, 0.73235788622, 5.73558999088, 0.76208761171],
+            2: [3.04213451359, 4.09583693658, 1.52477794997, 3.62485084479, 4.74975356567, 2.27530765982, 1.73940596535, 3.73599803004, 1.42442582128],
+            3: [3.04995589357, 0.50796822967, 0.56213531859, 2.07784157555, 2.33306518795, 3.09829474819, 1.38985667606, 0.65732662472, 1.28745833011],
+            4: [3.18257432349, 1.24767565678, 0.63705793942, 2.70986720915, 3.07073789223, 2.62398804102, 1.35398036309, 2.49317816545, 1.82358288342],
+            5: [2.82472422884, 1.86525180038, 0.67000010484, 2.41206372295, 4.79598866719, 1.45567754693, 3.08384803980, 3.16672779611, 1.39339495844],
+            6: [2.41093384228, 0.75179799922, -0.06845130652, 5.31516024015, 6.18292661356, 2.11902945049, 2.34483974439, 1.30654185816, 0.88610130594],
+            7: [1.87648457145, 0.86330612186, 0.13276769726, 1.45604935206, 3.75024848249, 1.81881970837, 1.47013574840, 0.39973235599, 1.27040048271],
+            8: [1.99880602692, 0.36182080344, 1.31338259193, 3.04243797930, 3.87057564366, 2.19390343264, 2.21106688056, 0.59664077464, 0.92515457789],
+            9: [2.29799008709, 0.75933887954, 0.41693318841, 4.23857112167, 6.20547567567, 2.20161697357, 2.75225593874, 2.02756655807, 1.40114440783],
+            10: [2.68461713487, 0.98759293415, 1.11409673390, 2.89339429182, 6.80911782002, 2.59663255030, 3.69886785025, 1.66715693897, 2.84112151984],
+            11: [2.47512287837, 1.04193183488, 0.66015351983, 1.37948430500, 6.55620184995, 1.86127479717, 3.61706036176, 0.20625267740, 1.42889913083],
+            12: [1.33728548012, 0.74415479048, 0.84978366163, 4.11676265359, 4.96587061228, 2.64004649138, 0.92516074701, 4.34985902043, 1.08251730131],
+            13: [1.67268772753, 0.33628581615, 0.44924793927, 6.82248533405, 2.58496158140, 1.16573122117, 4.43966663905, -0.12295937487, 1.31642136703],
+            14: [2.11705318170, 1.47268378611, -0.09595980624, 8.62783408417, 4.75865348185, 1.68159232031, 1.02538089682, 0.60011091972, 1.02415880287],
+            15: [2.96433088486, 1.51322698515, 0.61299809084, 2.13235174628, 3.02868054375, 1.60516221258, 2.59441921118, 1.50484161467, 1.66179943361],
+            16: [1.80547800828, 0.56664934637, 0.62460188294, 4.13980612047, 1.13031556638, 3.49618924238, 2.48891774599, 1.65760869757, 1.77292775494],
+            17: [2.02319091483, 1.59678700192, 14.76401418060, 2.67045294927, 8.31259966946, 2.32197368758, 1.40931990412, 1.45838437977, 0.56631189729],
+            18: [3.23645375342, 0.64553665600, -0.89426568496, 5.71293842607, 3.56906960336, 3.63639804334, 1.61673080561, 0.65863560487, 1.07109524923],
+            19: [1.77357224565, 1.85205023202, 0.51426940437, 4.52701283365, 8.64542072751, 1.81333951477, 5.06353970690, 1.53775940310, 2.25883036345],
+            20: [2.22695247360, 1.23021082140, 0.49060364366, 6.99016227683, 4.44074424260, 4.02726264278, 4.51370051573, 1.04075789650, 2.26080857709],
+            21: [1.99389911535, 5.52035473413, 0.70615545540, 4.98307058054, 5.31480106484, 2.00689168968, 2.71899184003, 0.04053615538, 0.72596455132],
+            22: [1.34903388277, 0.78636128576, -0.58558241925, 10.31001484020, 2.28309542579, 2.07259130660, 2.96838154174, 1.05041963720, 0.72596455132],
+            23: [4.00840669786, 4.78476863289, -0.58558241925, 5.63121979965, 1.61717114746, 2.11265331325, 2.07038283694, 0.69008899003, 1.39002816422]
+        };
+
+        // Данные CH4 по месяцам для каждой точки
+        const ch4Data = {
+            1: [-0.441694190636, -3.231702017710, 0.029311481496, 0.650297651281, -0.522493342747, -0.334978243026, -0.826512405558, 2.604678439360, 7.323087358700],
+            2: [-0.507397852284, -0.451759707849, 0.035341147728, -0.329312523968, -0.543041914709, 0.178018725135, -0.169883818924, -0.325079275755, 0.164914171766],
+            3: [-0.757015908943, -1.131521024000, -0.674200027703, -0.423301167679, -0.137763579209, -0.284783491566, -0.447374948280, 2.829767789640, -0.397134110960],
+            4: [-0.295239962628, -0.960823640467, 0.234283327861, -0.598490516306, -0.090959305975, 0.220083084606, -0.282344769831, 0.033700932179, -63.775246410500],
+            5: [-0.291241261696, 0.364978053982, -0.067490059803, -0.369007442238, -0.305202154965, -0.317326802936, 0.112509037323, 1.280170100640, -0.597648986800],
+            6: [-1.206552719820, -0.041884981257, -0.082532146606, -2.265774136270, -0.559916473013, -0.233837357366, -0.211573994288, 0.482096357265, -1.279931403440],
+            7: [-0.609930729625, -0.487656755315, -0.563470135463, -0.313250193180, -0.237884202834, -0.258095852613, -2.163491908640, 9.939820210920, -1.054412683460],
+            8: [-0.312600889942, -1.061540960808, -4.498716280260, -0.485263300497, -0.074591634673, -0.169529933295, 0.133122885864, 1.216797772150, -5.528977362680],
+            9: [-0.434014297701, -1.531705569360, 0.221002161791, -0.624026690979, -0.180415933022, -0.095698112911, -0.449085772475, -0.070613308982, 20.332538485200],
+            10: [-1.194832676770, -0.426386779364, -0.822852523210, -0.358145289022, -0.297779961370, -0.511450871667, -0.237085358611, 1.752176341320, -2.345085714200],
+            11: [-0.343050858000, -0.594483066313, -0.491598288955, -0.202206430231, -0.478997987384, -0.257192499997, -0.426251931219, -158.439481585000, -11.519371449200],
+            12: [-1.542116784330, -0.183314011595, -0.906382824875, -0.114436495823, -0.184941848214, -0.416839553284, 0.129001359309, -6.030044992220, 0.725809247874],
+            13: [-2.500316272990, -0.908594008251, -0.775241033726, -14.995225190100, 0.058905302284, -0.129775701215, 1.304481974240, 7.930344415410, -6.050334902910],
+            14: [-0.293061754085, 0.215011415219, 0.044545546706, -0.937424409570, -0.322228116979, -0.188160802250, -0.210129143719, 29.241347601600, 0.236081194707],
+            15: [-1.926882885560, -0.015777067259, 0.547706918030, -0.310260936479, -0.463002309352, -0.197081198330, -0.223952870278, -0.766367900412, -17.181357634000],
+            16: [-0.259645260785, 0.017488561106, -0.423791782670, -0.309328879484, -0.083935753017, -0.121952288342, -0.569303294981, -1.442501797900, -0.900800550169],
+            17: [-0.314066084513, 0.291924747399, -0.491810499348, -0.120886499080, -0.380501891204, -0.730618313211, -0.728839815282, 82.200386832200, 0.551180767941],
+            18: [-1.466969555790, -0.873805742115, -0.763729257254, -0.347461621262, -0.212637583787, -2.505692517230, 0.265806769126, -0.775345313885, -1.674813720750],
+            19: [-0.832770006901, -0.179462343223, -0.702801446103, -0.165934234907, -0.116980541575, -0.041414808456, -1.016554081360, 0.097585174919, -0.578558004931],
+            20: [-0.212016298488, 3.324023421900, 1.923998822360, -0.982970317682, -0.363951330243, -0.182341064322, -0.003132946741, 34.365694102600, -84.418177157400],
+            21: [-1.069614585520, 0.301484430536, -0.118230790258, -0.751897736405, -8.672959224650, -0.081974612228, -0.501274236305, 0.184009396586, -0.042663539691],
+            22: [-1.109134277420, -2.955433353310, -0.184765957000, -0.828901734017, -0.097762016679, -0.044154762853, 0.060375192138, 2.811192067680, 0.042663539691],
+            23: [-1.649971066310, 1.024356568860, -0.184765957000, -0.515910189570, -0.218860915942, -8.529541451660, -0.727537446688, 0.568458607612, -6.961774958020]
+        };
+
+        const months = ['Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь'];
+
+        let co2Chart = null;
+        let ch4Chart = null;
+
+        // Инициализация карты
+        ymaps.ready(init);
+
+        function init() {
+            const map = new ymaps.Map('map', {
+                center: [43.359289, 45.740684],
+                zoom: 17,
+                type: 'yandex#satellite'
+            }, {
+                searchControlProvider: 'yandex#search'
+            });
+
+            // Добавляем метки
+            points.forEach(point => {
+                const placemark = new ymaps.Placemark(
+                    [point.lat, point.lon],
+                    {
+                        iconContent: point.id
+                    },
+                    {
+                        preset: 'islands#yellowCircleIcon',
+                        iconColor: '#f59e0b',
+                        hasBalloon: false,
+                        openBalloonOnClick: false
+                    }
+                );
+
+                placemark.events.add('click', function(e) {
+                    e.stopPropagation();
+                    openModal(point.id);
+                });
+
+                map.geoObjects.add(placemark);
+            });
+
+            // Добавляем контролы
+            map.controls.remove('searchControl');
+            map.controls.remove('trafficControl');
+        }
+
+        function openModal(pointId) {
+            document.getElementById('pointNumber').textContent = pointId;
+            document.getElementById('modalOverlay').classList.add('active');
+            
+            // Уничтожаем предыдущие графики
+            if (co2Chart) {
+                co2Chart.destroy();
+            }
+            if (ch4Chart) {
+                ch4Chart.destroy();
+            }
+
+            // Создаём графики для выбранной точки
+            createCO2Chart(pointId);
+            createCH4Chart(pointId);
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        // Закрытие по клику на overlay
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Закрытие по Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        function createCO2Chart(pointId) {
+            const ctx = document.getElementById('co2Chart').getContext('2d');
+            
+            co2Chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: `CO₂ - Точка ${pointId}`,
+                        data: co2Data[pointId],
+                        borderColor: '#4472C4',
+                        backgroundColor: 'rgba(68, 114, 196, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#4472C4',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#94a3b8',
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 42, 58, 0.95)',
+                            titleColor: '#e0e6ed',
+                            bodyColor: '#94a3b8',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            },
+                            title: {
+                                display: true,
+                                text: 'CO₂ (микро моль/м²/с)',
+                                color: '#94a3b8',
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCH4Chart(pointId) {
+            const ctx = document.getElementById('ch4Chart').getContext('2d');
+            
+            ch4Chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: `CH₄ - Точка ${pointId}`,
+                        data: ch4Data[pointId],
+                        borderColor: '#ED7D31',
+                        backgroundColor: 'rgba(237, 125, 49, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#ED7D31',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#94a3b8',
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 42, 58, 0.95)',
+                            titleColor: '#e0e6ed',
+                            bodyColor: '#94a3b8',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            },
+                            title: {
+                                display: true,
+                                text: 'CH₄ (нано моль/м²/с)',
+                                color: '#94a3b8',
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
