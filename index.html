@@ -44,15 +44,25 @@
         .modal {
             background: linear-gradient(145deg, #1e2a3a, #16213e);
             border-radius: 20px;
-            padding: 25px;
-            width: 70vw;
-            height: 90vh;
+            padding: 20px;
+            width: 95vw;
+            max-width: 800px;
+            height: 85vh;
             overflow-y: auto;
             box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
                         0 0 0 1px rgba(255, 255, 255, 0.1);
             animation: modalAppear 0.3s ease-out;
             display: flex;
             flex-direction: column;
+        }
+
+        @media (max-width: 600px) {
+            .modal {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                padding: 15px;
+            }
         }
 
         @keyframes modalAppear {
@@ -78,7 +88,7 @@
 
         .modal-title {
             color: #e0e6ed;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 600;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
@@ -88,19 +98,26 @@
             font-weight: 700;
         }
 
+        @media (max-width: 600px) {
+            .modal-title {
+                font-size: 1.3rem;
+            }
+        }
+
         .close-btn {
             background: rgba(239, 68, 68, 0.2);
             border: 2px solid rgba(239, 68, 68, 0.5);
             color: #ef4444;
-            width: 45px;
-            height: 45px;
-            border-radius: 12px;
-            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 1.3rem;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
         .close-btn:hover {
@@ -118,23 +135,36 @@
 
         .chart-wrapper {
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 16px;
-            padding: 15px 20px;
+            border-radius: 12px;
+            padding: 12px 15px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             flex: 1;
-            min-height: 0;
+            min-height: 200px;
             display: flex;
             flex-direction: column;
         }
 
         .chart-title {
             color: #94a3b8;
-            font-size: 1rem;
-            margin-bottom: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
             text-align: center;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             flex-shrink: 0;
+        }
+
+        @media (max-width: 600px) {
+            .chart-wrapper {
+                padding: 10px;
+                border-radius: 10px;
+                min-height: 180px;
+            }
+            
+            .chart-title {
+                font-size: 0.75rem;
+                margin-bottom: 5px;
+            }
         }
 
         .chart-canvas {
@@ -167,11 +197,11 @@
 
         .info-panel {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
             background: linear-gradient(145deg, rgba(30, 42, 58, 0.95), rgba(22, 33, 62, 0.95));
-            padding: 20px 25px;
-            border-radius: 16px;
+            padding: 15px 18px;
+            border-radius: 12px;
             z-index: 100;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -180,18 +210,37 @@
 
         .info-panel h1 {
             color: #e0e6ed;
-            font-size: 1.3rem;
-            margin-bottom: 8px;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
         }
 
         .info-panel p {
             color: #94a3b8;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
         .info-panel .highlight {
             color: #4ade80;
             font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            .info-panel {
+                top: 5px;
+                left: 5px;
+                right: 5px;
+                padding: 10px 12px;
+                border-radius: 10px;
+            }
+            
+            .info-panel h1 {
+                font-size: 0.95rem;
+                margin-bottom: 3px;
+            }
+            
+            .info-panel p {
+                font-size: 0.7rem;
+            }
         }
     </style>
 </head>
@@ -212,11 +261,11 @@
             </div>
             <div class="charts-container">
                 <div class="chart-wrapper">
-                    <h3 class="chart-title">Потоки CO₂ на Карбоновой Ферме за 2024</h3>
+                    <h3 class="chart-title">Потоки CO₂ (микро моль/м²/с)</h3>
                     <canvas id="co2Chart" class="chart-canvas"></canvas>
                 </div>
                 <div class="chart-wrapper">
-                    <h3 class="chart-title">Потоки CH₄ на Карбоновой Ферме за 2024</h3>
+                    <h3 class="chart-title">Потоки CH₄ (нано моль/м²/с)</h3>
                     <canvas id="ch4Chart" class="chart-canvas"></canvas>
                 </div>
             </div>
