@@ -212,23 +212,24 @@
             }
         }
 
-        .chart-canvas {
-            width: 100% !important;
-            height: 220px !important;
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 220px;
         }
 
         /* Когда показываются все точки - один большой график */
-        .charts-container.single-chart .chart-canvas {
-            height: 450px !important;
+        .charts-container.single-chart .chart-container {
+            height: 450px;
         }
 
         @media (max-width: 600px) {
-            .chart-canvas {
-                height: 200px !important;
+            .chart-container {
+                height: 200px;
             }
             
-            .charts-container.single-chart .chart-canvas {
-                height: 350px !important;
+            .charts-container.single-chart .chart-container {
+                height: 350px;
             }
         }
 
@@ -325,11 +326,15 @@
             <div class="charts-container" id="chartsContainer">
                 <div class="chart-wrapper">
                     <h3 class="chart-title" id="co2Title">Потоки CO₂ (микро моль/м²/с)</h3>
-                    <canvas id="co2Chart" class="chart-canvas"></canvas>
+                    <div class="chart-container">
+                        <canvas id="co2Chart"></canvas>
+                    </div>
                 </div>
                 <div class="chart-wrapper" id="ch4Wrapper">
                     <h3 class="chart-title">Потоки CH₄ (нано моль/м²/с)</h3>
-                    <canvas id="ch4Chart" class="chart-canvas"></canvas>
+                    <div class="chart-container">
+                        <canvas id="ch4Chart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -570,6 +575,7 @@
                         tension: 0.1,
                         fill: true,
                         pointRadius: 5,
+                        pointHitRadius: 10,
                         pointBackgroundColor: '#4472C4',
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2
@@ -638,6 +644,7 @@
                         tension: 0.1,
                         fill: true,
                         pointRadius: 5,
+                        pointHitRadius: 10,
                         pointBackgroundColor: '#ED7D31',
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2
@@ -703,6 +710,7 @@
                     borderWidth: 2,
                     tension: 0.1,
                     pointRadius: 4,
+                    pointHitRadius: 10,
                     pointBackgroundColor: lineColors[i - 1],
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1
@@ -787,6 +795,7 @@
                     borderWidth: 2,
                     tension: 0.1,
                     pointRadius: 4,
+                    pointHitRadius: 10,
                     pointBackgroundColor: lineColors[i - 1],
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1
