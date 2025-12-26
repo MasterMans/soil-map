@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Цифровая почвенная карта | Карбоновый полигон</title>
+    <title>🌱 Карбоновый полигон ГГНТУ «WAYCARBON»</title>
     <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -132,10 +132,39 @@
             color: #fff;
         }
 
+        .view-all-btn.avg-co2-btn {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: rgba(74, 222, 128, 0.5);
+            color: #4ade80;
+        }
+
+        .view-all-btn.avg-co2-btn:hover,
+        .view-all-btn.avg-co2-btn.active {
+            background: #4ade80;
+            color: #1a1a2e;
+        }
+
+        .view-all-btn.avg-ch4-btn {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: rgba(168, 85, 247, 0.5);
+            color: #a855f7;
+        }
+
+        .view-all-btn.avg-ch4-btn:hover,
+        .view-all-btn.avg-ch4-btn.active {
+            background: #a855f7;
+            color: #fff;
+        }
+
         @media (max-width: 600px) {
             .view-all-btn {
-                padding: 6px 10px;
-                font-size: 0.75rem;
+                padding: 5px 8px;
+                font-size: 0.7rem;
+            }
+            
+            .header-buttons {
+                flex-wrap: wrap;
+                justify-content: flex-end;
             }
         }
 
@@ -308,9 +337,10 @@
     <div id="map"></div>
     
     <div class="info-panel">
-        <h1>🌱 Цифровая почвенная карта</h1>
-        <p>Карбоновый полигон • Потоки <span class="highlight">CO₂</span> и <span class="highlight">CH₄</span></p>
-        <p style="margin-top: 8px; font-size: 0.8rem;">Нажмите на метку для просмотра данных</p>
+        <h1>🌱 Карбоновый полигон ГГНТУ «WAYCARBON»</h1>
+        <p>Карбоновая ферма (Петропавловское шоссе)</p>
+        <p>Цифровая почвенная карта | потоки <span class="highlight">CO₂</span> и <span class="highlight">CH₄</span></p>
+        <p style="margin-top: 8px; font-size: 0.75rem; opacity: 0.8;">Нажмите на метку для просмотра данных</p>
     </div>
 
     <div class="modal-overlay" id="modalOverlay">
@@ -320,6 +350,8 @@
                 <div class="header-buttons">
                     <button class="view-all-btn co2-btn" onclick="showAllCO2()">Все CO₂</button>
                     <button class="view-all-btn ch4-btn" onclick="showAllCH4()">Все CH₄</button>
+                    <button class="view-all-btn avg-co2-btn" onclick="showAverageCO2()">Ср. CO₂</button>
+                    <button class="view-all-btn avg-ch4-btn" onclick="showAverageCH4()">Ср. CH₄</button>
                     <button class="close-btn" onclick="closeModal()">&times;</button>
                 </div>
             </div>
@@ -424,6 +456,10 @@
 
         const months = ['Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь'];
 
+        // Усреднённые данные по всем точкам
+        const averageCO2 = [2.34, 1.5, 1.28, 4.32, 4.6, 2.33, 2.44, 1.58, 1.36];
+        const averageCH4 = [-0.85, -0.41, -0.37, -1.11, -0.62, -0.66, -0.31, 0.42, -7.60];
+
         let co2Chart = null;
         let ch4Chart = null;
 
@@ -524,6 +560,36 @@
             
             destroyCharts();
             createAllCH4Chart();
+        }
+
+        function showAverageCO2() {
+            currentView = 'avgCO2';
+            document.getElementById('modalTitle').innerHTML = 'Осреднённые потоки CO₂';
+            document.getElementById('ch4Wrapper').style.display = 'none';
+            document.getElementById('chartsContainer').classList.add('single-chart');
+            document.getElementById('co2Title').textContent = 'Осреднённые потоки CO₂ (микро моль/м²/с)';
+            
+            // Активная кнопка
+            document.querySelectorAll('.view-all-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.avg-co2-btn').classList.add('active');
+            
+            destroyCharts();
+            createAverageCO2Chart();
+        }
+
+        function showAverageCH4() {
+            currentView = 'avgCH4';
+            document.getElementById('modalTitle').innerHTML = 'Осреднённые потоки CH₄';
+            document.getElementById('ch4Wrapper').style.display = 'none';
+            document.getElementById('chartsContainer').classList.add('single-chart');
+            document.getElementById('co2Title').textContent = 'Осреднённые потоки CH₄ (нано моль/м²/с)';
+            
+            // Активная кнопка
+            document.querySelectorAll('.view-all-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.avg-ch4-btn').classList.add('active');
+            
+            destroyCharts();
+            createAverageCH4Chart();
         }
 
         function destroyCharts() {
@@ -826,6 +892,144 @@
                                 padding: 8,
                                 usePointStyle: true
                             }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 42, 58, 0.95)',
+                            titleColor: '#e0e6ed',
+                            bodyColor: '#94a3b8',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            },
+                            title: {
+                                display: true,
+                                text: 'CH₄ (нано моль/м²/с)',
+                                color: '#94a3b8',
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createAverageCO2Chart() {
+            const ctx = document.getElementById('co2Chart').getContext('2d');
+            
+            co2Chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Среднее CO₂',
+                        data: averageCO2,
+                        borderColor: '#4ade80',
+                        backgroundColor: 'rgba(74, 222, 128, 0.15)',
+                        borderWidth: 3,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 6,
+                        pointHitRadius: 12,
+                        pointBackgroundColor: '#4ade80',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 42, 58, 0.95)',
+                            titleColor: '#e0e6ed',
+                            bodyColor: '#94a3b8',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            },
+                            title: {
+                                display: true,
+                                text: 'CO₂ (микро моль/м²/с)',
+                                color: '#94a3b8',
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createAverageCH4Chart() {
+            const ctx = document.getElementById('co2Chart').getContext('2d');
+            
+            co2Chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Среднее CH₄',
+                        data: averageCH4,
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                        borderWidth: 3,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 6,
+                        pointHitRadius: 12,
+                        pointBackgroundColor: '#a855f7',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
                         },
                         tooltip: {
                             backgroundColor: 'rgba(30, 42, 58, 0.95)',
